@@ -8,15 +8,31 @@ from src.db.models.students.topics import TopicsOrm
 
 class TopicCRUD:
     @staticmethod
-    async def get_topic_by_id(topic_id: int) -> topic_schema.TopicBase | None:
+    async def get_topic_by_id(topic_id: int) -> TopicsOrm:
         async with async_session() as session:
             query = select(TopicsOrm).where(TopicsOrm.id == topic_id)
             result = await session.execute(query)
-            topic = result.scalar_one_or_none()  # Use scalar_one_or_none() to handle cases where no result is found
-        return topic_schema.TopicBase.from_orm(topic) if topic else None
+            topic = result.scalar_one_or_none()
+        return topic if topic is not None else None
 
     @staticmethod
-    async def create_topic(topic: topic_schema.TopicInCreate) -> topic_schema.TopicBase:
+    async def get_topic_by_name(topic_name: str) -> TopicsOrm:
+        async with async_session() as session:
+            query = select(TopicsOrm).where(TopicsOrm.name == topic_name)
+            result = await session.execute(query)
+            topic = result.scalar_one_or_none()
+        return topic if topic else None
+
+    @staticmethod
+    async def get_topic_by_order(order: int) -> TopicsOrm:
+        async with async_session() as session:
+            query = select(TopicsOrm).where(TopicsOrm.order == order)
+            result = await session.execute(query)
+            topic = result.scalar_one_or_none()
+        return topic if topic else None
+
+    @staticmethod
+    async def create_topic(topic: topic_schema.TopicInCreate) -> TopicsOrm:
         try:
             async with async_session() as session:
                 query = insert(TopicsOrm).values(**topic.dict())
@@ -24,13 +40,13 @@ class TopicCRUD:
                 await session.commit()
                 created_topic = result.inserted_primary_key
                 created_topic_data = await session.get(TopicsOrm, created_topic[0])
-            return topic_schema.TopicBase.from_orm(created_topic_data)
+            return created_topic_data if created_topic_data else None
         except Exception as e:
             await session.rollback()
             raise e
 
     @staticmethod
-    async def update_topic(topic_id: int, topic: topic_schema.TopicInUpdate) -> topic_schema.TopicBase:
+    async def update_topic(topic_id: int, topic: topic_schema.TopicInUpdate):
         try:
             async with async_session() as session:
                 query = (
@@ -41,8 +57,8 @@ class TopicCRUD:
                 )
                 result = await session.execute(query)
                 await session.commit()
-                updated_topic = result.scalar_one_or_none()  # Fetch the updated topic
-            return topic_schema.TopicBase.from_orm(updated_topic) if updated_topic else None
+                updated_topic = result.scalar_one_or_none()
+            return updated_topic if updated_topic else None
         except Exception as e:
             await session.rollback()
             raise e
@@ -62,3 +78,11 @@ class TopicCRUD:
         except Exception as e:
             await session.rollback()
             raise e
+
+    @staticmethod
+    async def get_all_topics():
+        async with async_session() as session:
+            query = select(TopicsOrm).order_by(TopicsOrm.order)
+            result = await session.execute(query)
+            db_topics = result.scalars().all()
+        return db_topics
