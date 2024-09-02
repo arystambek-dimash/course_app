@@ -7,11 +7,10 @@ from pydantic import BaseModel
 class _BaseTopicSchema(BaseModel):
     name: str
     description: Optional[str]
-    order: int
 
 
 class TopicInCreate(_BaseTopicSchema):
-    pass
+    order: Optional[int]
 
 
 class TopicInUpdate(_BaseTopicSchema):
@@ -23,6 +22,7 @@ class TopicInUpdate(_BaseTopicSchema):
 class TopicBase(_BaseTopicSchema):
     id: int
     created_at: datetime
+    order: int
 
 
 class TopicDetailResponse(TopicBase):
